@@ -3,6 +3,7 @@ from glob import glob
 import concurrent.futures
 from collections import Counter
 import json
+from os.path import isfile
 
 
 def _utf_to_ascii_table():
@@ -16,68 +17,7 @@ def _utf_to_ascii_table():
 sanitization_table = _utf_to_ascii_table()
 
 
-def utf8_to_ascii(c: str):
-    return c.translate(sanitization_table)
-
-
-def bigram_to_ascii(bigram: str, consider_accents=False):
-    return
-
-
-def sanitise_characters(char_data: dict[str, int]):
-    new_char_data = defaultdict(int)
-
-    for char, val in char_data.items():
-        new_chars = utf8_to_ascii(char)
-        if len(new_chars) > 0:
-            for new_char in new_chars:
-                new_char_data[new_char] += val
-
-    sum_chars = sum(new_char_data.values())
-    for char, val in new_char_data.items():
-        new_char_data[char] /= sum_chars
-    return dict(new_char_data)
-
-
-def sanitise_bigrams(bigram_data: dict[str, int]):
-    new_bigram_data = defaultdict(int)
-
-    for bigram, val in bigram_data.items():
-        new_bigrams = [utf8_to_ascii(bigram[0]), utf8_to_ascii(bigram[1])]
-        if len(new_bigrams) > 0:
-            for new_bigram in new_bigrams:
-                new_bigram_data[new_bigram] += val
-
-    sum_bigrams = sum(new_bigram_data.values())
-    for bigram, val in new_bigram_data.items():
-        new_bigram_data[bigram] /= sum_bigrams
-    return dict(new_bigram_data)
-
-
-def sanitise_skipgrams(skipgram_data: dict[str, int], consider_accents=False):
-    sum_skipgrams = sum(skipgram_data.values())
-
-
-def sanitise_trigrams(trigram_data: dict[str, int], consider_accents=False):
-    sum_trigrams = sum(trigram_data.values())
-
-
-def sanitise_data(corpus_data: dict[str, dict[str, int]], consider_accents=False):
-    with concurrent.futures.ProcessPoolExecutor(4) as executor:
-        clean_chars = executor.submit(sanitise_characters, corpus_data["characters"], consider_accents)
-        clean_bigrams = executor.submit(sanitise_bigrams, corpus_data["bigrams"])
-        clean_skipgrams = executor.submit(sanitise_skipgrams, corpus_data["skipgrams"])
-        clean_trigrams = executor.submit(sanitise_trigrams, corpus_data["trigrams"])
-
-        return {
-            clean_chars.result(),
-            clean_bigrams.result(),
-            clean_skipgrams.result(),
-            clean_trigrams.result()
-        }
-
-
-def analyse_file(path: str, has_progress_bar=False):
+def analyse_file(path: str):
     with open(path, 'r', encoding='utf-8') as file:
         text = file.read().translate(sanitization_table)
 
@@ -103,7 +43,7 @@ def analyse_file(path: str, has_progress_bar=False):
         }
 
 
-def generate_data(corpus_iterator):
+def generate_complete_data(corpus_iterator):
     characters = Counter()
     bigrams = Counter()
     skipgrams = Counter()
@@ -140,15 +80,16 @@ def generate_data(corpus_iterator):
     }
 
 
-def analyse_corpus(text_directory="text", language="english"):
+def analyse_corpus(text_directory="text", language="english", update=False):
+    if not update and isfile(f"language_data/{language}.json"):
+        return
+
     paths = glob(f"{text_directory}/{language}/*.txt")
-    if len(paths) == 1:
-        corpus_data = dict(reversed(sorted(analyse_file(paths[0], True).items(), key=lambda item: item[1])))
-    elif len(paths) > 1:
+    if len(paths) > 0:
         with concurrent.futures.ProcessPoolExecutor() as executor:
-            corpus_data = generate_data(executor.map(analyse_file, paths))
+            corpus_data = generate_complete_data(executor.map(analyse_file, paths))
     else:
         corpus_data = {}
 
-    with open(f"{language}_data.json", 'w') as language_data:
+    with open(f"language_data/{language}.json", 'w') as language_data:
         json.dump(corpus_data, language_data, indent='\t', separators=(',', ': '))

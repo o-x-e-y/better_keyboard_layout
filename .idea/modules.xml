@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/better_keyboard_layout.iml" filepath="$PROJECT_DIR$/.idea/better_keyboard_layout.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/layout-analysis-tool.iml" filepath="$PROJECT_DIR$/.idea/layout-analysis-tool.iml" />
     </modules>
   </component>
 </project>

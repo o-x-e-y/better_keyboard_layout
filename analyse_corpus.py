@@ -1,21 +1,22 @@
 from collections import defaultdict
 from glob import glob
 import concurrent.futures
+import multiprocessing as mp
 from collections import Counter
 import json
 from os.path import isfile, getsize
 from os import cpu_count
-from textwrap import wrap
 from time import perf_counter
+import pandas as pd
+from functools import reduce
 
 
 def time_this(func):
-
     def wrapper(*args, **kwargs):
         start = perf_counter()
         result = func(*args, **kwargs)
         end = perf_counter()
-        print(f"\"{func.__name__}\" took {round(end - start, ndigits=6 if end-start < 1 else 3)} second(s)\n")
+        print(f"\"{func.__name__}\" took {round(end - start, ndigits=6 if end-start < 0.1 else 3)} second(s)\n")
         return result
 
     return wrapper
@@ -32,59 +33,41 @@ def _utf_to_ascii_table():
 sanitization_table = _utf_to_ascii_table()
 
 
-def sanitize_bigrams(bigrams: dict[str, int]):
-    double_bigrams = {bigram for bigram in bigrams.keys() if bigram[0] != bigram[1] and ' ' not in bigram}
-    for double_bigram in double_bigrams:
-        bigrams.pop(double_bigram)
-    return bigrams
+def sanitize_str2(strs: dict[str, int]):
+    return {str2: val for str2, val in strs.items() if (str2[0] != str2[1] and ' ' not in str2)}
 
 
-def sanitize_skipgrams(skipgrams: dict[str, int]):
-    double_skipgrams = {skipgram for skipgram in skipgrams.keys() if skipgram[0] != skipgram[1] and ' ' not in skipgram}
-    for double_skipgram in double_skipgrams:
-        skipgrams.pop(double_skipgram)
-    return skipgrams
+def sanitize_str3(strs: dict[str, int]):
+    return {str3: val for str3, val in strs.items() if len(set(str3)) == 3 and ' ' not in str3}
 
 
-@time_this
-def sanitize_corpus_data(corpus_data: dict[str, dict[str, int]]):
+def sanitize_data(bigrams: dict[str, int], skipgrams: dict[str, int], trigrams: dict[str, int]):
     with concurrent.futures.ProcessPoolExecutor(2) as executor:
-        bigrams_exec = executor.submit(sanitize_bigrams, corpus_data["bigrams"])
-        skipgrams_exec = executor.submit(sanitize_skipgrams, corpus_data["skipgrams"])
+        bigrams_exec = executor.submit(sanitize_str2, bigrams)
+        skipgrams_exec = executor.submit(sanitize_str2, skipgrams)
+        trigrams_exec = executor.submit(sanitize_str3, trigrams)
 
-        corpus_data["bigrams"] = bigrams_exec.result()
-        corpus_data["skipgrams"] = skipgrams_exec.result()
+        bigrams = bigrams_exec.result()
+        skipgrams = skipgrams_exec.result()
+        trigrams = trigrams_exec.result()
 
-        return corpus_data
-
-
-def analyse_file(text: str):
-    characters = defaultdict(int)
-    bigrams = defaultdict(int)
-    skipgrams = defaultdict(int)
-
-    for i in range(len(text)-2):
-        characters[text[i]] += 1
-        bigrams[text[i: i+2]] += 1
-        skipgrams[text[i] + text[i+2]] += 1
-
-    return {
-        "characters":   dict(characters),
-        "bigrams":      dict(bigrams),
-        "skipgrams":    dict(skipgrams)
-    }
+        return bigrams, skipgrams, trigrams
 
 
 @time_this
-def generate_complete_data(corpus_iterator):
-    characters = Counter()
-    bigrams = Counter()
-    skipgrams = Counter()
+def generate_complete_data(characters, bigrams, skipgrams, trigrams):
+    start = perf_counter()
 
-    for data in corpus_iterator:
-        characters += Counter(data["characters"])
-        bigrams += Counter(data["bigrams"])
-        skipgrams += Counter(data["skipgrams"])
+    # data = reduce(
+    #     lambda x, y: x.add(y, fill_value=0),
+    #     (pd.DataFrame.from_dict(d) for d in corpus_iterator)
+    # ).to_dict()
+
+    end = perf_counter()
+    print(f"\"adding data together\" took {round(end - start, ndigits=6 if end-start < 0.1 else 3)} second(s)\n")
+
+    del characters[" "]
+    bigrams, skipgrams, trigrams = sanitize_data(bigrams, skipgrams, trigrams)
 
     sum_characters = sum(characters.values())
     characters = {k: v / sum_characters for k, v in characters.items()}
@@ -95,10 +78,14 @@ def generate_complete_data(corpus_iterator):
     sum_skipgrams = sum(skipgrams.values())
     skipgrams = {k: v / sum_skipgrams for k, v in skipgrams.items()}
 
+    sum_trigrams = sum(trigrams.values())
+    trigrams = {k: v / sum_trigrams for k, v in trigrams.items()}
+
     return {
         "characters":   dict(sorted(characters.items(), key=lambda item: item[1], reverse=True)),
         "bigrams":      dict(sorted(bigrams.items(), key=lambda item: item[1], reverse=True)),
-        "skipgrams":    dict(sorted(skipgrams.items(), key=lambda item: item[1], reverse=True))
+        "skipgrams":    dict(sorted(skipgrams.items(), key=lambda item: item[1], reverse=True)),
+        "trigrams":     dict(sorted(trigrams.items(), key=lambda item: item[1], reverse=True))
     }
 
 
@@ -153,30 +140,38 @@ def create_splits(language: str, text_directory: str):
     return [(path, info[0]) for path, info in split_info.items()]
 
 
-@time_this
-def do_the_wrapping(text, width, split_count):
-    return wrap(text, width=width // split_count + 1)
-
-
 def split_text(splits):
-    print("running")
     path, split_count = splits
     with open(path, 'r', encoding='utf-8') as file:
         text = file.read().translate(sanitization_table)
         width = len(text)
         if split_count == 1:
             return [text]
-        return do_the_wrapping(text, width, split_count)
+        size = width // split_count + 1
+        return [text[i * size:(i+1) * size] for i in range(split_count)]
 
 
-@time_this
-def do_the_splitting(splits):
-    if len(splits) < 30:
-        with concurrent.futures.ProcessPoolExecutor(12) as executor:
-            return sum(list(executor.map(split_text, splits)), [])
-    else:
-        with concurrent.futures.ProcessPoolExecutor() as executor:
-            return sum(list(executor.map(split_text, splits)), [])
+def analyse_file(text: str, characters: dict, bigrams: dict, skipgrams: dict, trigrams: dict):
+
+    for i in range(len(text)-2):
+        characters.setdefault(text[i], 0)
+        characters[text[i]] += 1
+
+        bigrams.setdefault(text[i: i+2], 0)
+        bigrams[text[i: i+2]] += 1
+
+        skipgrams.setdefault(text[i] + text[i+2], 0)
+        skipgrams[text[i] + text[i+2]] += 1
+
+        trigrams.setdefault(text[i: i+3], 0)
+        trigrams[text[i: i+3]] += 1
+
+    # return {
+    #     "characters":   dict(characters),
+    #     "bigrams":      dict(bigrams),
+    #     "skipgrams":    dict(skipgrams),
+    #     "trigrams":     dict(trigrams)
+    # }
 
 
 @time_this
@@ -185,15 +180,31 @@ def analyse_corpus(language="english", text_directory="text", update=False):
         return
 
     splits = create_splits(language, text_directory)
-    if splits:
-        texts = do_the_splitting(splits)
-        print(len(texts))
+    if len(splits) >= 1:
+        with concurrent.futures.ThreadPoolExecutor() as executor:
+            texts = sum(list(executor.map(split_text, splits)), [])
     else:
         print("There are no files in that directory")
         return
 
+    manager = mp.Manager()
+    characters = manager.dict()
+    bigrams = manager.dict()
+    skipgrams = manager.dict()
+    trigrams = manager.dict()
+    processes = []
+    for text in texts:
+        p = mp.Process(target=analyse_file, args=(text, characters, bigrams, skipgrams, trigrams,))
+        p.start()
+        processes.append(p)
+
+    for process in processes:
+        process.join()
+
+    print(characters)
+    corpus_data = generate_complete_data(dict(characters), dict(bigrams), dict(skipgrams), dict(trigrams))
     # with concurrent.futures.ProcessPoolExecutor() as executor:
     #     corpus_data = generate_complete_data(executor.map(analyse_file, texts))
-    #
-    # with open(f"language_data/{language}.json", 'w') as language_data:
-    #     json.dump(corpus_data, language_data, indent='\t', separators=(',', ': '))
+
+    with open(f"language_data/{language}.json", 'w') as language_data:
+        json.dump(corpus_data, language_data, indent='\t', separators=(',', ': '))

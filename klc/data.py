@@ -247,13 +247,103 @@ locale_ids = {'afrikaans - south africa': '0436',
               'yoruba': '046a',
               'zulu': '0435'}
 
-alphabets = {"latin": "abcdefghijklmnopqrstuvwxyz.,';"}
 
-sc = {'nums': ['02', '03', '04', '05', '06', '07', '08', '09', '0a', '0b'],
-      'top_row': ['']
-      }
+SC = {"nums":    ['02', '03', '04', '05', '06', '07', '08', '09', '0a', '0b'],
+      "top_row": ['10', '11', '12', '13', '14', '15', '16', '17', '18', '19'],
+      "homerow": ['1e', '1f', '20', '21', '22', '23', '24', '25', '26', '27'],
+      "bot_row": ['2c', '2d', '2e', '2f', '30', '31', '32', '33', '34', '35'],
+      "symbols": ['29', '0c', '0d', '1a', '1b', '28', '2b'],
+      "iso_key": '56'}
 
-stuff = """# layout (anishtro)
+
+VK = {"'": 'OEM_7',
+      ',': 'OEM_COMMA',
+      '-': 'OEM_MINUS',
+      '.': 'OEM_PERIOD',
+      '/': 'OEM_2',
+      '0': '0',
+      '1': '1',
+      '2': '2',
+      '3': '3',
+      '4': '4',
+      '5': '5',
+      '6': '6',
+      '7': '7',
+      '8': '8',
+      '9': '9',
+      ';': 'OEM_1',
+      '=': 'OEM_PLUS',
+      '[': 'OEM_4',
+      '\\': 'OEM_5',
+      ']': 'OEM_6',
+      '`': 'OEM_3',
+      'a': 'A',
+      'b': 'B',
+      'c': 'C',
+      'd': 'D',
+      'dec_sep': 'DECIMAL',
+      'e': 'E',
+      'f': 'F',
+      'g': 'G',
+      'h': 'H',
+      'i': 'I',
+      'iso_key': 'OEM_102',
+      'j': 'J',
+      'k': 'K',
+      'l': 'L',
+      'm': 'M',
+      'n': 'N',
+      'o': 'O',
+      'p': 'P',
+      'q': 'Q',
+      'r': 'R',
+      's': 'S',
+      'space': 'SPACE',
+      't': 'T',
+      'u': 'U',
+      'v': 'V',
+      'w': 'W',
+      'x': 'X',
+      'y': 'Y',
+      'z': 'Z'}
+
+
+sym_upper = {'`': '~',
+             '[': '{',
+             ']': '}',
+             '/': '?',
+             '=': '+',
+             '-': '_',
+             '\\': '|',
+             "'": '"',
+             ',': '<',
+             '.': '>',
+             ';': ':',
+             '1': '!',
+             '2': '@',
+             '3': '#',
+             '4': '$',
+             '5': '%',
+             '6': '^',
+             '7': '&',
+             '8': '*',
+             '9': '(',
+             '0': ')'}
+
+
+static = '\n\n\nKEYNAME\n\n01\tEsc\n0e\tBackspace\n0f\tTab\n1c\tEnter\n1d\tCtrl\n2a\tShift\n36\t"Right Shift"\n37' \
+         '\t"Num *"\n38\tAlt\n39\tSpace\n3a\t"Caps Lock"\n3b\tF1\n3c\tF2\n3d\tF3\n3e\tF4\n3f\tF5\n40\tF6\n41\tF7' \
+         '\n42\tF8\n43\tF9\n44\tF10\n45\tPause\n46\t"Scroll Lock"\n47\t"Num 7"\n48\t"Num 8"\n49\t"Num 9"\n4a' \
+         '\t"Num -"\n4b\t"Num 4"\n4c\t"Num 5"\n4d\t"Num 6"\n4e\t"Num +"\n4f\t"Num 1"\n50\t"Num 2"\n51\t"Num 3"' \
+         '\n52\t"Num 0"\n53\t"Num Del"\n54\t"Sys Req"\n57\tF11\n58\tF12\n7c\tF13\n7d\tF14\n7e\tF15\n7f\tF16\n80' \
+         '\tF17\n81\tF18\n82\tF19\n83\tF20\n84\tF21\n85\tF22\n86\tF23\n87\tF24\n\nKEYNAME_EXT\n\n1c\t"Num Enter"' \
+         '\n1d\t"Right Ctrl"\n35\t"Num /"\n37\t"Prnt Scrn"\n38\t"Right Alt"\n45\t"Num Lock"\n46\tBreak\n47\tHome' \
+         '\n48\tUp\n49\t"Page Up"\n4b\tLeft\n4d\tRight\n4f\tEnd\n50\tDown\n51\t"Page Down"\n52\tInsert\n53' \
+         '\tDelete\n54\t<00>\n56\tHelp\n5b\t"Left Windows"\n5c\t"Right Windows"\n5d\tApplication\n\n'
+
+
+stuff = """
+# layout (anishtro)
 q l u c j k p m w -
 a n i s v b h t r o
 / ; y g x z f d . ,
@@ -277,4 +367,5 @@ fingers: 4
 0 1 2 3 3 6 6 7 8 9
 4
 type:
-matrix"""
+matrix
+"""

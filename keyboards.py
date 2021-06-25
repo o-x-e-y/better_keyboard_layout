@@ -1,11 +1,15 @@
-layouts = {"abc": ("abcdefghij", "klmnopqrst", "uvwxyz.,'-", "abc"),
-           "qwerty": ("qwertyuiop", "asdfghjkl;", "zxcvbnm,./", "qwerty"),
-           "dvorak": ("',.pyfgcrl", "aoeuidhtns", ";qjkxbmwvz", "dvorak"),
-           "colemak": ("qwfpgjluy;", "arstdhneio", "zxcvbkm,./", "colemak"),
-           "halmak": ("wlrbz;qudj", "shnt,.aeoi", "fmvc/gpxky", "halmak"),
-           "mtgap": ("ypoujkdlcw", "inea,mhtsr", "qz/.;bfgvx", "mtgap")}
+layouts = {"abc": ("abcdefghij", "klmnopqrst", "uvwxyz.,'-", "abc", "just the alphabet"),
+           "qwerty": ("qwertyuiop", "asdfghjkl;", "zxcvbnm,./", "qwerty", "de facto standard (unfortunately)"),
+           "dvorak": ("',.pyfgcrl", "aoeuidhtns", ";qjkxbmwvz", "dvorak", "Default Dvorak"),
+           "colemak": ("qwfpgjluy;", "arstdhneio", "zxcvbkm,./", "colemak", "OG colemak"),
+           "halmak": ("wlrbz;qudj", "shnt,.aeoi", "fmvc/gpxky", "halmak", "AI generated layout"),
+           "mtgap": ("ypoujkdlcw", "inea,mhtsr", "qz/.;bfgvx", "mtgap", "ahead of its time")}
 
-layout_symbols = {"colemak": "`[]=/\\-"}
+layout_symbols = {"qwerty":     "`-=[]'\\",
+                  "dvorak":     "`[]=/-\\",
+                  "colemak":    "`[]=/\\-",
+                  "mtgap":      "`-=[]'\\",
+                  "abc":        "`-=[]'\\"}
 
 
 class Keyboard:
@@ -70,14 +74,15 @@ class AnsiKeyboard(Keyboard):
                  symbols="*******",
                  nums="1234567890"):
         super().__init__(top_row, homerow, bot_row, name, description)
-        self.symbols = ["*"] * 7 if len(symbols) != 7 else list(symbols)
-        self.wide_symbols = self.symbols
-        self.nums = list(nums)
+        self.symbols = "*******" if len(symbols) != 7 else symbols
+        self.wide_symbols = list(self.symbols)
+        self.nums = nums
+        self.wide_nums = list(nums)
 
     def __str__(self):
         return (f"{self.name}:\n"
-                f"{self.wide_symbols[0]} {' '.join(self.nums)} {' '.join(self.wide_symbols[1:3])} BSP\n"
-                f"TB {' '.join(self.top_row)} {' '.join(self.symbols[3:5])} {self.wide_symbols[6]*2}\n"
+                f"{self.wide_symbols[0]} {' '.join(self.wide_nums)} {' '.join(self.wide_symbols[1:3])} BSP\n"
+                f"TB {' '.join(self.top_row)} {' '.join(self.wide_symbols[3:5])} {self.wide_symbols[6]*2}\n"
                 f"CPS {' '.join(self.homerow)} {self.wide_symbols[5]} ENT\n"
                 f"SHFT {' '.join(self.bot_row)} SHFT\n")
 
@@ -91,7 +96,7 @@ class AnsiKeyboard(Keyboard):
         """
         self.wide_symbols = (self.symbols[0] + self.nums[-2:] + self.top_row[-1] +
                              self.symbols[4] + self.homerow[-1] + self.symbols[6])
-        self.nums = self.nums[:5] + self.symbols[1:3] + self.nums[-5:-2]
+        self.wide_nums = self.nums[:5] + self.symbols[1:3] + self.nums[-5:-2]
         self.top_row = self.top_row[:5] + self.symbols[3] + self.top_row[-5:-1]
         self.homerow = self.homerow[:5] + self.symbols[5] + self.homerow[-5:-1]
         self.bot_row = self.bot_row[:5] + self.bot_row[-1] + self.bot_row[-5:-1]
@@ -119,9 +124,9 @@ class IsoKeyboard(AnsiKeyboard):
                  description=None,
                  symbols="*******",
                  nums="1234567890",
-                 iso_key="*"):
+                 iso_key=None):
         super().__init__(top_row, homerow, bot_row, name, description, symbols, nums)
-        self.iso_key = iso_key if iso_key != "*" else self.symbols[5]
+        self.iso_key = iso_key if iso_key else self.symbols[6]
 
     def __str__(self):
         return (f"{self.name}:\n"

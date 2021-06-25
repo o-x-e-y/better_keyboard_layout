@@ -166,12 +166,12 @@ def analyse_file(text: str, characters: dict, bigrams: dict, skipgrams: dict, tr
         trigrams.setdefault(text[i: i+3], 0)
         trigrams[text[i: i+3]] += 1
 
-    # return {
-    #     "characters":   dict(characters),
-    #     "bigrams":      dict(bigrams),
-    #     "skipgrams":    dict(skipgrams),
-    #     "trigrams":     dict(trigrams)
-    # }
+    return {
+        "characters":   dict(characters),
+        "bigrams":      dict(bigrams),
+        "skipgrams":    dict(skipgrams),
+        "trigrams":     dict(trigrams)
+    }
 
 
 @time_this

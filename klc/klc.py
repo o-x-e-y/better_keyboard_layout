@@ -1,6 +1,6 @@
 from keyboards import Keyboard, AnsiKeyboard, IsoKeyboard
 from keyboards import layout_symbols
-from data import locale_ids, SC, VK, sym_upper, static
+from klc.data import locale_ids, SC, VK, sym_upper, static
 from locale import windows_locale
 
 

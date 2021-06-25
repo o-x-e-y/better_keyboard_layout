@@ -27,7 +27,7 @@ class Keyboard:
         self.top_row = top_row
         self.homerow = homerow
         self.bot_row = bot_row
-        self.keyboard = [list(self.top_row), list(self.homerow), list(self.bot_row)]
+        self.layout  = [list(self.top_row), list(self.homerow), list(self.bot_row)]
         self.fingers = [[self.top_row[0] + self.homerow[0] + self.bot_row[0]],
                         [self.top_row[1] + self.homerow[1] + self.bot_row[1]],
                         [self.top_row[2] + self.homerow[2] + self.bot_row[2]],

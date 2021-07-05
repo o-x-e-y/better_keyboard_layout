@@ -2,29 +2,29 @@ from os import cpu_count
 from os.path import getsize
 from glob import glob
 import concurrent.futures
-from time import perf_counter
+from tools import *
 
 
-def time_this(func):
-    def wrapper(*args, **kwargs):
-        start = perf_counter()
-        result = func(*args, **kwargs)
-        end = perf_counter()
-        print(f"\"{func.__name__}\" took {round(end - start, ndigits=6 if end-start < 0.1 else 3)} second(s)\n")
-        return result
-
-    return wrapper
-
-
+@time_this
 def _utf_to_ascii_table():
-    utf_stuff =  "\t\n \"+:<>?ABCDEFGHIJKLMNOPQRSTUVWXYZ\\_{|}~«´»ÀÁÂÄÇÈÉÊËÌÍÎÏÐÑÒÓÔÖÙÚÛÜÝàáâäçèéêëìíîïðñòóôö÷øùúûüý‘“”’–ʹ͵"
-    translation = "   \'=;,./abcdefghijklmnopqrstuvwxyz\\-[\\]`'''aaaaceeeeiiiidnoooouuuuyaaaaceeeeiiiidnoooo/ouuuuy''''-''"
-    exceptions = utf_stuff + translation
+    utf_backup =  "\t\n \"+:<>?ABCDEFGHIJKLMNOPQRSTUVWXYZ\\_{|}~«´»ÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜàáâäçèéêëìíîïñòóôö÷ùúûü‘“”’–ʹ͵"
+    trans_backup = "   \'=;,./abcdefghijklmnopqrstuvwxyz\\-[\\]`'''aaaaceeeeiiiinoooouuuuaaaaceeeeiiiinoooo/uuuu''''-''"
+    utf_stuff =  "\t\n \"+:<>?ABCDEFGHIJKLMNOPQRSTUVWXYZ\\_{|}~«´»÷‘“”’–ʹ͵"
+    translation = "   \'=;,./abcdefghijklmnopqrstuvwxyz\\-[\\]`'''/''''-''"
+    exceptions = set(utf_stuff + translation)
     replace = ''.join([chr(c) for c in range(0, int("110000", 16)) if chr(c) not in exceptions])
     return str.maketrans(utf_stuff, translation, replace)
 
 
-sanitization_table = _utf_to_ascii_table()
+# sanitization_table = _utf_to_ascii_table()
+sanitization_table = {}
+
+
+def flatten_chunks(chunks):
+    flat = []
+    for chunk in chunks:
+        flat.extend(chunk)
+    return flat
 
 
 def _chunk_length(piece: tuple[str, list[int, int]]):
@@ -83,16 +83,23 @@ def open_text(chunk: (str, int)):
         return file.read(), chunk[1]
 
 
+@log_this
 def chunk_text(text_chunk: (str, int)):
+    start = perf_counter()
     text, chunk_count = text_chunk
+    global sanitization_table
     text = text.translate(sanitization_table)
     width = len(text)
+    end = perf_counter()
+    print("sanitizing took a while, about ", end-start, " seconds. There were ", chunk_count, "chunks")
     if chunk_count == 1:
+        print("just returned the text lol")
         return [text]
     size = width // chunk_count + 1
     return [text[i*size: (i+1)*size] for i in range(chunk_count)]
 
 
+@log_this
 def chunk_texts(language: str, text_directory: str):
     chunks = create_chunks(language, text_directory)
     if len(chunks) >= 1:
@@ -100,7 +107,9 @@ def chunk_texts(language: str, text_directory: str):
             text_chunks = executor.map(open_text, chunks)
 
         with concurrent.futures.ThreadPoolExecutor() as executor:
-            return sum(list(executor.map(chunk_text, text_chunks)), [])
+            prepared_chunks = executor.map(chunk_text, text_chunks)
+
+        return flatten_chunks(prepared_chunks)
     else:
         print("There are no files in that directory")
         return

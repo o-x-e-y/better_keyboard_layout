@@ -5,19 +5,7 @@ import json
 from os.path import isfile
 from corpus_analysis.chunk_texts import chunk_texts
 from corpus_analysis.analyse_text import analyse_text
-
-from time import perf_counter
-
-
-def time_this(func):
-    def wrapper(*args, **kwargs):
-        start = perf_counter()
-        result = func(*args, **kwargs)
-        end = perf_counter()
-        print(f"\"{func.__name__}\" took {round(end - start, ndigits=6 if end-start < 0.1 else 3)} second(s)\n")
-        return result
-
-    return wrapper
+from tools import *
 
 
 def sanitize_str2(strs: dict[bytes, int]):
@@ -47,7 +35,6 @@ def sanitize_data(bigrams: dict[bytes, int], trigrams: dict[bytes, int]):
         return bigrams, skipgrams, trigrams
 
 
-@time_this
 def generate_complete_data(corpus_iterator):
     characters = Counter()
     bigrams = Counter()
@@ -82,37 +69,36 @@ def generate_complete_data(corpus_iterator):
 
 
 def analyse_file(text: str):
-    characters = defaultdict(int)
-    bigrams = defaultdict(int)
-    skipgrams = defaultdict(int)
-    trigrams = defaultdict(int)
+    characters_list = [str] * len(text)
+    bigrams_list =    [str] * len(text)
+    skipgrams_list =  [str] * len(text)
+    trigrams_list =   [str] * len(text)
 
     for i in range(len(text)-2):
-        characters[text[i]] += 1
-        bigrams[text[i: i+2]] += 1
-        skipgrams[text[i] + text[i+2]] += 1
-        trigrams[text[i: i+3]] += 1
+        characters_list[i] = text[i]
+        bigrams_list[i] =    text[i: i+2]
+        skipgrams_list[i] =  text[i] + text[i+2]
+        trigrams_list[i] =   text[i: i+3]
 
     return {
-        "characters":   dict(characters),
-        "bigrams":      dict(bigrams),
-        "skipgrams":    dict(skipgrams),
-        "trigrams":     dict(trigrams)
+        "characters": dict(Counter(characters_list)),
+        "bigrams":    dict(Counter(bigrams_list)),
+        "skipgrams":  dict(Counter(skipgrams_list)),
+        "trigrams":   dict(Counter(trigrams_list))
     }
 
 
-@time_this
-def prepare_analyse_text(language, text_directory):
-    texts = chunk_texts(language, text_directory)
-    return [text.encode('utf-8') for text in texts], [len(text) for text in texts]
+def prepare_analyse_text(chunked_texts):
+    return [text.encode('utf-8') for text in chunked_texts], [len(text) for text in chunked_texts]
 
 
-@time_this
-def analyse_corpus(language="english", text_directory="text", update=False):
+@log_this
+def analyse_corpus(language="english", text_directory="text", script='latin', update=False):
     if not update and isfile(f"language_data/{language.lower()}.json"):
         return
 
-    texts, lengths = prepare_analyse_text(language, text_directory)
+    chunked_texts = chunk_texts(language, text_directory)
+    texts, lengths = prepare_analyse_text(chunked_texts)
 
     with concurrent.futures.ProcessPoolExecutor() as executor:
         corpus_iterator = executor.map(analyse_text, texts, lengths)

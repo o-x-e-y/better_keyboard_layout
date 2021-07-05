@@ -1,15 +1,23 @@
+from analyse_layout import analyse_layout
+from functools import reduce
+import operator
+
+
 layouts = {"abc": ("abcdefghij", "klmnopqrst", "uvwxyz.,'-", "abc", "just the alphabet"),
            "qwerty": ("qwertyuiop", "asdfghjkl;", "zxcvbnm,./", "qwerty", "de facto standard (unfortunately)"),
            "dvorak": ("',.pyfgcrl", "aoeuidhtns", ";qjkxbmwvz", "dvorak", "Default Dvorak"),
            "colemak": ("qwfpgjluy;", "arstdhneio", "zxcvbkm,./", "colemak", "OG colemak"),
            "halmak": ("wlrbz;qudj", "shnt,.aeoi", "fmvc/gpxky", "halmak", "AI generated layout"),
-           "mtgap": ("ypoujkdlcw", "inea,mhtsr", "qz/.;bfgvx", "mtgap", "ahead of its time")}
+           "mtgap": ("ypoujkdlcw", "inea,mhtsr", "qz/.;bfgvx", "mtgap", "ahead of its time"),
+           "colemak qix": (";lcmkjfuyq", "arstgpneio", "xwdvzbn/.,", "colemak_qix", "colemak but good or something")}
 
-layout_symbols = {"qwerty":     "`-=[]'\\",
-                  "dvorak":     "`[]=/-\\",
-                  "colemak":    "`[]=/\\-",
-                  "mtgap":      "`-=[]'\\",
-                  "abc":        "`-=[]'\\"}
+layout_symbols = {"qwerty":      "`-=[]'\\",
+                  "dvorak":      "`[]/=-\\",
+                  "colemak":     "`-=[]'\\",
+                  "halmak":      "`-=[]'\\",
+                  "mtgap":       "`-=[]'\\",
+                  "abc":         "`-=[]'\\",
+                  "colemak qix": "`=[-]'\\"}
 
 
 class Keyboard:
@@ -20,10 +28,12 @@ class Keyboard:
                  homerow: str,
                  bot_row: str,
                  name=None,
-                 description=None):
+                 description=None,
+                 analyse=False):
 
         self.name = name if name else homerow[:4]
         self.description = description if description else self.name
+        self.score = analyse_layout(self) if analyse else None
         self.top_row = top_row
         self.homerow = homerow
         self.bot_row = bot_row
@@ -50,6 +60,13 @@ class Keyboard:
     def __bytes__(self):
         return bytes(repr(self).encode('utf-8'))
 
+    def __len__(self):
+        return 30
+
+    def __iter__(self):
+        for key in reduce(operator.iconcat, self.layout):
+            yield key
+
 
 class AnsiKeyboard(Keyboard):
     """
@@ -61,7 +78,7 @@ class AnsiKeyboard(Keyboard):
         top_row (str):     A string of length 10 representing the top row of the keyboard, without symbols.
         homerow (str):     A string of length 10 representing the homerow of the keyboard, without symbols.
         bot_row (str):     A string of length 10 representing the bot row of the keyboard.
-        name=None:         If not given, will be generated from the first 4 keys on the homerow.
+        name=None:         If not given, will be klc_files from the first 4 keys on the homerow.
         description=None:       A description of the current layout. If not given, defaults to self.name.
         symbols="*******": A string of length 7 representing all 7 symbol keys, from right->left and top->bottom.
         nums="1234567890": A string of length 10 representing what are on qwerty the number positions.
@@ -111,7 +128,7 @@ class IsoKeyboard(AnsiKeyboard):
         top_row (str):     A string of length 10 representing the top row of the keyboard, without symbols.
         homerow (str):     A string of length 10 representing the homerow of the keyboard, without symbols.
         bot_row (str):     A string of length 10 representing the bot row of the keyboard.
-        name=None:         If not given, will be generated from the first 4 keys on the homerow.
+        name=None:         If not given, will be klc_files from the first 4 keys on the homerow.
         description=None:  A description of the current layout. If not given, defaults to self.name.
         symbols="*******": A string of length 7 representing all 7 symbol keys, from right->left and top->bottom.
         nums="1234567890": A string of length 10 representing what are on qwerty the number positions.

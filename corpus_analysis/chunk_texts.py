@@ -85,7 +85,6 @@ def chunk_text(text_chunk: (str, int)):
     text = text.translate(_utf_to_ascii_table())
     width = len(text)
     if chunk_count == 1:
-        print("just returned the text lol")
         return [text]
     size = width // chunk_count + 1
     return [text[i*size: (i+1)*size] for i in range(chunk_count)]

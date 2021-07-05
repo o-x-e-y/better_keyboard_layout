@@ -22,10 +22,10 @@ def get_dsfb_score(fingers: list[list[str]], data) -> float:
 
 
 class LayoutAnalyzer:
-    def __init__(self, kb, language="iweb_corpus"):
+    def __init__(self, kb, sfb_penalties=(0, 1, 2), dsfb_penalty=0.5, language="iweb_corpus"):
         self.data = get_data(language)
         self.effort = get_effort_score(kb.layout, self.data)
-        self.sfbs = get_sfb_score(kb.fingers, self.data)
+        self.sfbs = get_sfb_score(kb.fingers, self.data, sfb_penalties)
         self.dsfbs = get_dsfb_score(kb.fingers, self.data)
 
 

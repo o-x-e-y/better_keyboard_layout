@@ -16,10 +16,6 @@ def _utf_to_ascii_table():
     return str.maketrans(utf_stuff, translation, replace)
 
 
-# sanitization_table = _utf_to_ascii_table()
-sanitization_table = {}
-
-
 def flatten_chunks(chunks):
     flat = []
     for chunk in chunks:
@@ -85,13 +81,9 @@ def open_text(chunk: (str, int)):
 
 @log_this
 def chunk_text(text_chunk: (str, int)):
-    start = perf_counter()
     text, chunk_count = text_chunk
-    global sanitization_table
-    text = text.translate(sanitization_table)
+    text = text.translate(_utf_to_ascii_table())
     width = len(text)
-    end = perf_counter()
-    print("sanitizing took a while, about ", end-start, " seconds. There were ", chunk_count, "chunks")
     if chunk_count == 1:
         print("just returned the text lol")
         return [text]
@@ -99,7 +91,6 @@ def chunk_text(text_chunk: (str, int)):
     return [text[i*size: (i+1)*size] for i in range(chunk_count)]
 
 
-@log_this
 def chunk_texts(language: str, text_directory: str):
     chunks = create_chunks(language, text_directory)
     if len(chunks) >= 1:

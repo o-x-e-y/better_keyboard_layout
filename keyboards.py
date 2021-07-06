@@ -1,4 +1,3 @@
-from analyse_layout import analyse_layout
 from functools import reduce
 import operator
 
@@ -28,12 +27,10 @@ class Keyboard:
                  homerow: str,
                  bot_row: str,
                  name=None,
-                 description=None,
-                 analyse=False):
+                 description=None):
 
         self.name = name if name else homerow[:4]
         self.description = description if description else self.name
-        self.score = analyse_layout(self) if analyse else None
         self.top_row = top_row
         self.homerow = homerow
         self.bot_row = bot_row

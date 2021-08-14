@@ -35,14 +35,14 @@ class Keyboard:
         self.homerow = homerow
         self.bot_row = bot_row
         self.layout  = [list(self.top_row), list(self.homerow), list(self.bot_row)]
-        self.fingers = [[self.top_row[0] + self.homerow[0] + self.bot_row[0]],
-                        [self.top_row[1] + self.homerow[1] + self.bot_row[1]],
-                        [self.top_row[2] + self.homerow[2] + self.bot_row[2]],
+        self.fingers = [list(self.top_row[0] + self.homerow[0] + self.bot_row[0]),
+                        list(self.top_row[1] + self.homerow[1] + self.bot_row[1]),
+                        list(self.top_row[2] + self.homerow[2] + self.bot_row[2]),
                         list(self.top_row[3:5]) + list(self.homerow[3:5]) + list(self.bot_row[3:5]),
                         list(self.top_row[5:7]) + list(self.homerow[5:7]) + list(self.bot_row[5:7]),
-                        [self.top_row[7] + self.homerow[7] + self.bot_row[7]],
-                        [self.top_row[8] + self.homerow[8] + self.bot_row[8]],
-                        [self.top_row[9] + self.homerow[9] + self.bot_row[9]]]
+                        list(self.top_row[7] + self.homerow[7] + self.bot_row[7]),
+                        list(self.top_row[8] + self.homerow[8] + self.bot_row[8]),
+                        list(self.top_row[9] + self.homerow[9] + self.bot_row[9])]
 
     def __str__(self):
         return (f"{self.name}:\n"

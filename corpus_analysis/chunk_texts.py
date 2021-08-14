@@ -7,13 +7,13 @@ from tools import *
 
 @time_this
 def _utf_to_ascii_table():
-    utf_backup =  "\t\n \"+:<>?ABCDEFGHIJKLMNOPQRSTUVWXYZ\\_{|}~«´»ÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜàáâäçèéêëìíîïñòóôö÷ùúûü‘“”’–ʹ͵"
-    trans_backup = "   \'=;,./abcdefghijklmnopqrstuvwxyz\\-[\\]`'''aaaaceeeeiiiinoooouuuuaaaaceeeeiiiinoooo/uuuu''''-''"
+    utf_backup =  "\t\n \"+:<>?ABCDEFGHIJKLMNOPQRSTUVWXYZ\\_{|}~«´»ÀÁÂÄÇÈÉÊËÌÍÎÏÑÒÓÔÖÙÚÛÜ÷‘“”’–ʹ͵"
+    trans_backup = "   \'=;,./abcdefghijklmnopqrstuvwxyz\\-[\\]`'''àáâäçèéêëìíîïñòóôöùúûü/''''-''"
     utf_stuff =  "\t\n \"+:<>?ABCDEFGHIJKLMNOPQRSTUVWXYZ\\_{|}~«´»÷‘“”’–ʹ͵"
     translation = "   \'=;,./abcdefghijklmnopqrstuvwxyz\\-[\\]`'''/''''-''"
-    exceptions = set(utf_stuff + translation)
+    exceptions = set(utf_backup + trans_backup)
     replace = ''.join([chr(c) for c in range(0, int("110000", 16)) if chr(c) not in exceptions])
-    return str.maketrans(utf_stuff, translation, replace)
+    return str.maketrans(utf_backup, trans_backup, replace)
 
 
 def flatten_chunks(chunks):
@@ -79,27 +79,38 @@ def open_text(chunk: (str, int)):
         return file.read(), chunk[1]
 
 
-@log_this
-def chunk_text(text_chunk: (str, int)):
-    text, chunk_count = text_chunk
-    text = text.translate(_utf_to_ascii_table())
-    width = len(text)
-    if chunk_count == 1:
-        return [text]
-    size = width // chunk_count + 1
-    return [text[i*size: (i+1)*size] for i in range(chunk_count)]
+class TextChunker:
+    def __init__(self, language: str, text_directory: str):
+        self.language = language
+        self.text_directory = text_directory
+        self.utf_to_ascii_table = _utf_to_ascii_table()
+        self.chunked_texts = self.chunk_texts()
 
+    def chunk_texts(self):
+        chunks = create_chunks(self.language, self.text_directory)
+        if len(chunks) >= 1:
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                text_chunks = executor.map(open_text, chunks)
 
-def chunk_texts(language: str, text_directory: str):
-    chunks = create_chunks(language, text_directory)
-    if len(chunks) >= 1:
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            text_chunks = executor.map(open_text, chunks)
+            with concurrent.futures.ThreadPoolExecutor() as executor:
+                prepared_chunks = executor.map(self._chunk_text, text_chunks)
 
-        with concurrent.futures.ThreadPoolExecutor() as executor:
-            prepared_chunks = executor.map(chunk_text, text_chunks)
+            return flatten_chunks(prepared_chunks)
+        else:
+            print("There are no files in that directory")
+            return
 
-        return flatten_chunks(prepared_chunks)
-    else:
-        print("There are no files in that directory")
-        return
+    def _chunk_text(self, text_chunk: (str, int)):
+        text, chunk_count = text_chunk
+        text = text.translate(self.utf_to_ascii_table)
+        width = len(text)
+        if chunk_count == 1:
+            return [text]
+        size = width // chunk_count + 1
+        return [text[i*size: (i+1)*size] for i in range(chunk_count)]
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        del self
